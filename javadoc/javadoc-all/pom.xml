@@ -334,4 +334,36 @@
          </plugin>
       </plugins>
    </build>
+
+   <profiles>
+      <profile>
+         <id>distribution</id>
+         <build>
+            <plugins>
+               <plugin>
+                  <groupId>org.apache.maven.plugins</groupId>
+                  <artifactId>maven-antrun-plugin</artifactId>
+                  <executions>
+                     <execution>
+                        <id>upload</id>
+                        <phase>package</phase>
+                        <goals>
+                           <goal>run</goal>
+                        </goals>
+                        <configuration>
+                           <skip>${skipArtifactUpload}</skip>
+                           <target>
+                              <echo message="Uploading JavaDocs to ${upload.docsDir}/apidocs"/>
+                              <scp todir="${upload.docsDir}/apidocs" keyfile="${upload.keyFile}" verbose="true" compressed="true">
+                                 <fileset dir="${project.build.directory}/apidocs"/>
+                              </scp>
+                           </target>
+                        </configuration>
+                     </execution>
+                  </executions>
+               </plugin>
+            </plugins>
+         </build>
+      </profile>
+   </profiles>
 </project>

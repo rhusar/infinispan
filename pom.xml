@@ -1812,7 +1812,8 @@
             <extensions>true</extensions>
             <configuration>
                <autoReleaseAfterClose>false</autoReleaseAfterClose>
-               <stagingRepositoryId></stagingRepositoryId>
+               <stagingDescription>${infinispan.brand.name} ${project.version} release</stagingDescription>
+               <stagingRepositoryId>${infinispan.brand.prefix}-${project.version}</stagingRepositoryId>
                <nexusUrl>${jboss.releases.nexus.url}</nexusUrl>
                <serverId>${jboss.releases.repo.id}</serverId>
             </configuration>

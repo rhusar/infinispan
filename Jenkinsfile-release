@@ -1,0 +1,61 @@
+#!/usr/bin/env groovy
+
+pipeline {
+    agent {
+        label 'slave-group-release'
+    }
+
+    parameters {
+        booleanParam(defaultValue: true, description: 'Dry run', name: 'dryRun')
+        string(defaultValue: '9.3.0.Final', description: 'Release version', name: 'versionRelease')
+        string(defaultValue: '9.3.0-SNAPSHOT', description: 'New development version', name: 'versionNext')
+    }
+
+    options {
+        timeout(time: 3, unit: 'HOURS')
+    }
+
+    stages {
+        stage('Prepare') {
+            steps {
+                // Show the agent name in the build list
+                script {
+                    // The manager variable requires the Groovy Postbuild plugin
+                    manager.addShortText(env.NODE_NAME, "grey", "", "0px", "")
+                }
+
+                // Workaround for JENKINS-47230
+                script {
+                    env.MAVEN_HOME = tool('Maven')
+                    env.MAVEN_OPTS = "-Xmx800m -XX:+HeapDumpOnOutOfMemoryError"
+                    env.JAVA_HOME = tool('Oracle JDK 8')
+                }
+
+                sh returnStdout: true, script: 'cleanup.sh'
+            }
+        }
+
+        stage('Checkout') {
+            steps {
+                checkout scm
+            }
+        }
+
+        stage('Build') {
+            steps {
+                configFileProvider([configFile(fileId: 'maven-settings-with-deploy-snapshot', variable: 'MAVEN_SETTINGS')]) {
+                    sh "$MAVEN_HOME/bin/mvn --batch-mode -s \"$MAVEN_SETTINGS\" release:prepare release:perform -DdevelopmentVersion=${params.versionNext} -DreleaseVersion=${params.versionRelease} -Dtag=${params.versionRelease} -DdryRun=${params.dryRun} -Darguments=-DskipTests -DskipTests"
+                }
+                warnings canRunOnFailed: true, consoleParsers: [[parserName: 'Maven'], [parserName: 'Java Compiler (javac)']], shouldDetectModules: true
+                checkstyle canRunOnFailed: true, pattern: '**/target/checkstyle-result.xml', shouldDetectModules: true
+            }
+        }
+    }
+
+    post {
+        always {
+            // Clean
+            sh 'git clean -fdx -e "*.hprof" || echo "git clean failed, exit code $?"'
+        }
+    }
+}

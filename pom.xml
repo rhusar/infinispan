@@ -1268,6 +1268,7 @@
                <version>2.5</version>
                <configuration>
                   <generateBackupPoms>false</generateBackupPoms>
+                  <processAllModules>true</processAllModules>
                </configuration>
             </plugin>
             <plugin>

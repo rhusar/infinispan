@@ -24,8 +24,8 @@ public class ProcessInfo {
       return new ProcessInfo(ProcessHandle.current());
    }
 
-   public static Process of(java.lang.Process process) {
-      return new Process(process.toHandle());
+   public static ProcessInfo of(Process process) {
+      return new ProcessInfo(process.toHandle());
    }
 
    public String getName() {

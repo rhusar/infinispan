@@ -22,7 +22,10 @@ public final class RemoteQueryFactory extends BaseQueryFactory {
 
    public RemoteQueryFactory(InternalRemoteCache<?, ?> cache) {
       this.cache = cache;
-      Marshaller marshaller = cache.getRemoteCacheManager().getMarshaller();
+      Marshaller marshaller = cache.getDataFormat().resolveValueMarshaller();
+      if (marshaller == null) {
+         marshaller = cache.getRemoteCacheManager().getMarshaller();
+      }
       // we may or may not use Protobuf
       if (marshaller instanceof ProtoStreamMarshaller) {
          serializationContext = ((ProtoStreamMarshaller) marshaller).getSerializationContext();

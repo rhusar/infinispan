@@ -9,6 +9,7 @@ import org.infinispan.factories.annotations.Inject;
 import org.infinispan.factories.annotations.Stop;
 import org.infinispan.marshall.core.impl.DelegatingUserMarshaller;
 import org.infinispan.protostream.ImmutableSerializationContext;
+import org.infinispan.remoting.responses.ExceptionResponse;
 
 /**
  * A globally-scoped marshaller for cluster communication.
@@ -111,7 +112,9 @@ public class GlobalMarshaller extends AbstractInternalProtoStreamMarshaller {
       if (o instanceof MarshallableLambda) {
          return ((MarshallableLambda) o).unwrap(classLoader);
       } else if (o instanceof MarshallableThrowable) {
-         return ((MarshallableThrowable) o).get();
+         return ((MarshallableThrowable) o).get(classLoader);
+      } else if (o instanceof ExceptionResponse) {
+         ((ExceptionResponse) o).resolve(classLoader);
       }
 
       return super.unwrapAndInit(o);

@@ -31,6 +31,10 @@ public class ExceptionResponse implements InvalidResponse {
       return (Exception) exception.get();
    }
 
+   public void resolve(ClassLoader classLoader) {
+      if (exception != null) exception.get(classLoader);
+   }
+
    public void setException(Exception exception) {
       this.exception = MarshallableThrowable.create(exception);
    }

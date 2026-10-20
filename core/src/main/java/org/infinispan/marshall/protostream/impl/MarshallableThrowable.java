@@ -77,17 +77,26 @@ public class MarshallableThrowable {
     }
 
     public Throwable get() {
+        return get(Thread.currentThread().getContextClassLoader());
+    }
+
+    /**
+     * Recreates the throwable, resolving its class via the specified class loader, falling back to the thread context
+     * class loader and the class loader of this class. The recreated throwable is cached, so subsequent calls to
+     * {@link #get()} return the same instance.
+     */
+    public Throwable get(ClassLoader classLoader) {
         if (throwable == null) {
-            throwable = recreateGenericThrowable(impl, msg, cause);
-            if (suppressed != null) suppressed.forEach(s -> throwable.addSuppressed(s.get()));
+            throwable = recreateGenericThrowable(classLoader, impl, msg, cause);
+            if (suppressed != null) suppressed.forEach(s -> throwable.addSuppressed(s.get(classLoader)));
         }
         return throwable;
     }
 
-    private Throwable recreateGenericThrowable(String impl, String msg, MarshallableThrowable t) {
-        Throwable cause = t == null ? null : t.get();
+    private Throwable recreateGenericThrowable(ClassLoader classLoader, String impl, String msg, MarshallableThrowable t) {
+        Throwable cause = t == null ? null : t.get(classLoader);
         try {
-            Class<?> clazz = Class.forName(impl, false, Thread.currentThread().getContextClassLoader());
+            Class<?> clazz = loadClass(impl, classLoader);
             if (!Throwable.class.isAssignableFrom(clazz)) {
                 return new RemoteException(impl + ": " + msg, cause);
             }
@@ -111,6 +120,19 @@ public class MarshallableThrowable {
         } catch (ClassNotFoundException e) {
             return new RemoteException(impl + ": " + msg, cause);
         }
+    }
+
+    private static Class<?> loadClass(String name, ClassLoader classLoader) throws ClassNotFoundException {
+        ClassNotFoundException failure = null;
+        for (ClassLoader loader : new ClassLoader[] { classLoader, Thread.currentThread().getContextClassLoader(), MarshallableThrowable.class.getClassLoader() }) {
+            if (loader == null) continue;
+            try {
+                return Class.forName(name, false, loader);
+            } catch (ClassNotFoundException e) {
+                failure = e;
+            }
+        }
+        throw (failure != null) ? failure : new ClassNotFoundException(name);
     }
 
     private Object create(Class<?> clazz, Function<Constructor<?>, ?> builder, Class<?>... args) {
